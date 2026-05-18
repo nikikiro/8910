@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <title>Билярд Турнири · 3 варианта</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: 'Geist', system-ui, sans-serif;
+      background: #f0eee9;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    /* Animations used by screens */
+    @keyframes sheet-rise { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes screen-in  { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* Override DCArtboard's white card so the iOS frame sits on the warm canvas */
+    .dc-card { background: transparent !important; box-shadow: none !important; }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="data.js"></script>
+  <script src="themes.js"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="screens.jsx"></script>
+  <script type="text/babel" src="app.jsx"></script>
+
+  <script type="text/babel">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "showFilters": true
+    }/*EDITMODE-END*/;
+
+    function CanvasRoot() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+      const themes = window.THEMES;
+
+      return (
+        <React.Fragment>
+          <DesignCanvas>
+            <DCSection id="styles" title="Три визуални направления"
+              subtitle="Един и същ flow · Май 2026 · Календарен изглед по подразбиране">
+              <DCArtboard id="clean" label="Чисто · Светъл, изумруд" width={402} height={874}>
+                <BilliardsApp theme={themes.clean} showFilters={t.showFilters} />
+              </DCArtboard>
+              <DCArtboard id="dark" label="Турнир · Тъмен, синя креда" width={402} height={874}>
+                <BilliardsApp theme={themes.dark} showFilters={t.showFilters} />
+              </DCArtboard>
+              <DCArtboard id="club" label="Клуб · Топъл, серифи" width={402} height={874}>
+                <BilliardsApp theme={themes.club} showFilters={t.showFilters} />
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="scenarios" title="Сценарии"
+              subtitle="Списъчен изглед · Админ режим · Други стартови състояния. Натисни ден за поп-ъп, после турнир за детайли.">
+              <DCArtboard id="list-clean" label="Чисто · Списъчен изглед" width={402} height={874}>
+                <BilliardsApp theme={themes.clean} startView="list" showFilters={t.showFilters} />
+              </DCArtboard>
+              <DCArtboard id="admin-dark" label="Турнир · Админ режим" width={402} height={874}>
+                <BilliardsApp theme={themes.dark} initialAdmin={true} showFilters={t.showFilters} />
+              </DCArtboard>
+              <DCArtboard id="june-club" label="Клуб · Следващ месец" width={402} height={874}>
+                <BilliardsApp theme={themes.club} startMonth={{ y: 2026, m: 5 }} showFilters={t.showFilters} />
+              </DCArtboard>
+              <DCArtboard id="admin-list" label="Чисто · Админ + Списък" width={402} height={874}>
+                <BilliardsApp theme={themes.clean} startView="list" initialAdmin={true} showFilters={t.showFilters} />
+              </DCArtboard>
+            </DCSection>
+
+            <DCPostIt top={-44} left={80} rotate={-3} width={220}>
+              Натисни ден с цифрено баджче, за да отвориш поп-ъп с турнирите за деня.
+            </DCPostIt>
+            <DCPostIt top={-44} right={80} rotate={2.5} width={220}>
+              В админ режима имаш + бутон за нов турнир и редакция/изтриване на всеки.
+            </DCPostIt>
+          </DesignCanvas>
+
+          <TweaksPanel title="Tweaks">
+            <TweakSection label="Контроли" />
+            <TweakToggle
+              label="Лента филтри + Календар/Списък"
+              value={t.showFilters}
+              onChange={(v) => setTweak('showFilters', v)} />
+          </TweaksPanel>
+        </React.Fragment>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<CanvasRoot/>);
+  </script>
+</body>
+</html>

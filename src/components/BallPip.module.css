@@ -1,0 +1,41 @@
+.ball {
+  align-items: center;
+  background: var(--ball-color);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.08),
+    inset calc(var(--ball-size) * 0.18) calc(var(--ball-size) * 0.18) 0 rgba(255, 255, 255, 0.35);
+  display: inline-flex;
+  flex-shrink: 0;
+  height: var(--ball-size);
+  justify-content: center;
+  width: var(--ball-size);
+}
+
+.striped {
+  background: linear-gradient(
+    180deg,
+    var(--ball-color) 0%,
+    var(--ball-color) 28%,
+    #fff 28%,
+    #fff 72%,
+    var(--ball-color) 72%,
+    var(--ball-color) 100%
+  );
+}
+
+.center {
+  align-items: center;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.1);
+  color: #15171a;
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: calc(var(--ball-size) * 0.42);
+  font-weight: 700;
+  height: calc(var(--ball-size) * 0.55);
+  justify-content: center;
+  line-height: 1;
+  width: calc(var(--ball-size) * 0.55);
+}
