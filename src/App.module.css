@@ -607,7 +607,7 @@
   padding: 12px;
 }
 
-.primaryButton {
+.buttonRow .primaryButton {
   flex: 1;
 }
 
