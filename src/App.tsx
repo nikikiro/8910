@@ -3,7 +3,7 @@ import { loginAdmin, logoutAdmin, getAdminSession } from "./auth/authService";
 import { BallPip } from "./components/BallPip";
 import { Icon } from "./components/Icons";
 import styles from "./App.module.css";
-import { BG, CITIES, CLUBS, DEFAULT_FILTERS } from "./tournaments/data";
+import { BG, CITIES, DEFAULT_FILTERS } from "./tournaments/data";
 import { formatDateKey, formatLongDate, getTournamentStatus, monthMatrix, pad2, parseDateKey, sameDay, startOfDay, statusLabel } from "./tournaments/date";
 import { countActiveFilters, tournamentMatchesFilters } from "./tournaments/filters";
 import { tournamentsService } from "./tournaments/tournamentsService";
@@ -22,7 +22,7 @@ const emptyDraft = (date = today): TournamentInput => ({
   level: "pro",
   handicap: false,
   city: CITIES[0],
-  club: CLUBS[0],
+  club: "",
   date: formatDateKey(date),
   startHour: "18:00",
   dressCode: false,
@@ -72,6 +72,7 @@ function App() {
   }, [pendingDelete, selectedDate]);
 
   const filtered = useMemo(() => tournaments.filter((t) => tournamentMatchesFilters(t, filters)), [tournaments, filters]);
+  const clubOptions = useMemo(() => uniqueSorted(tournaments.map((t) => t.club)), [tournaments]);
   const byDate = useMemo(() => {
     const map: Record<string, Tournament[]> = {};
     filtered.forEach((t) => {
@@ -183,10 +184,10 @@ function App() {
         />
       )}
 
-      {top === "filters" && <FiltersSheet filters={filters} onChange={setFilters} onReset={() => setFilters(DEFAULT_FILTERS)} onClose={() => setStack((s) => s.filter((x) => x !== "filters"))} />}
+      {top === "filters" && <FiltersSheet filters={filters} clubOptions={clubOptions} onChange={setFilters} onReset={() => setFilters(DEFAULT_FILTERS)} onClose={() => setStack((s) => s.filter((x) => x !== "filters"))} />}
       {top === "login" && <LoginScreen onClose={() => setStack((s) => s.filter((x) => x !== "login"))} onSuccess={() => { setIsAdmin(true); setStack((s) => s.filter((x) => x !== "login")); }} />}
       {top === "detail" && selectedTournament && <DetailScreen t={selectedTournament} isAdmin={isAdmin} onBack={() => setStack((s) => s.slice(0, -1))} onEdit={(t) => { setEditingDraft(t); setStack((s) => [...s, "form"]); }} onDelete={setPendingDelete} />}
-      {top === "form" && editingDraft && <TournamentForm draft={editingDraft} onCancel={() => { setStack((s) => s.filter((x) => x !== "form")); setEditingDraft(null); }} onSave={saveTournament} onDelete={(t) => setPendingDelete(t as Tournament)} />}
+      {top === "form" && editingDraft && <TournamentForm draft={editingDraft} clubOptions={clubOptions} onCancel={() => { setStack((s) => s.filter((x) => x !== "form")); setEditingDraft(null); }} onSave={saveTournament} onDelete={(t) => setPendingDelete(t as Tournament)} />}
       {pendingDelete && <ConfirmDialog onCancel={() => setPendingDelete(null)} onConfirm={confirmDelete} />}
 
       <select className={styles.themeSelect} value={theme} onChange={(e) => setTheme(e.target.value as "clean" | "dark" | "club")} aria-label="Тема">
@@ -347,7 +348,11 @@ function levelLabel(level: TournamentLevel) {
   return level === "pro" ? BG.pro : level === "amateur" ? BG.amateur : BG.both;
 }
 
-function FiltersSheet({ filters, onChange, onReset, onClose }: { filters: Filters; onChange: (f: Filters) => void; onReset: () => void; onClose: () => void }) {
+function uniqueSorted(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, "bg-BG"));
+}
+
+function FiltersSheet({ filters, clubOptions, onChange, onReset, onClose }: { filters: Filters; clubOptions: string[]; onChange: (f: Filters) => void; onReset: () => void; onClose: () => void }) {
   const patch = (p: Partial<Filters>) => onChange({ ...filters, ...p });
   const toggleArr = <K extends "types" | "levels" | "cities" | "clubs">(key: K, value: Filters[K][number]) => {
     const arr = filters[key] as unknown[];
@@ -364,7 +369,7 @@ function FiltersSheet({ filters, onChange, onReset, onClose }: { filters: Filter
         <Group title={BG.handicap}><div className={styles.chipRow}>{choiceChips(filters.handicap, (v) => patch({ handicap: v }))}</div></Group>
         <Group title={BG.dressCode}><div className={styles.chipRow}>{choiceChips(filters.dressCode, (v) => patch({ dressCode: v }))}</div></Group>
         <Group title={BG.city}><div className={styles.chipWrap}>{CITIES.map((c) => <Chip compact key={c} active={filters.cities.includes(c)} onClick={() => toggleArr("cities", c)}>{c}</Chip>)}</div></Group>
-        <Group title={BG.club}><div className={styles.chipWrap}>{CLUBS.map((c) => <Chip compact key={c} active={filters.clubs.includes(c)} onClick={() => toggleArr("clubs", c)}>{c}</Chip>)}</div></Group>
+        {clubOptions.length > 0 && <Group title={BG.club}><div className={styles.chipWrap}>{clubOptions.map((c) => <Chip compact key={c} active={filters.clubs.includes(c)} onClick={() => toggleArr("clubs", c)}>{c}</Chip>)}</div></Group>}
       </div>
     </Sheet>
   );
@@ -398,7 +403,7 @@ function LoginScreen({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   return <div className={styles.screen}><div className={styles.screenTop}><span /><button className={styles.roundButton} aria-label="Затвори" onClick={onClose}><Icon.close /></button></div><div className={styles.loginBody}><div className={styles.loginLogo}>8/9</div><div className={styles.displayTitle}>{BG.loginTitle}</div><p className={styles.muted}>{BG.loginHint}</p>{error && <p className={styles.dangerText}>{error}</p>}<Field label={BG.username} value={email} onChange={setEmail} /><Field label={BG.password} type="password" value={password} onChange={setPassword} /><button className={styles.primaryButton} onClick={submit}>{BG.login}</button></div></div>;
 }
 
-function TournamentForm({ draft, onCancel, onSave, onDelete }: { draft: TournamentInput & { id?: number }; onCancel: () => void; onSave: (draft: TournamentInput & { id?: number }) => void; onDelete: (draft: TournamentInput & { id?: number }) => void }) {
+function TournamentForm({ draft, clubOptions, onCancel, onSave, onDelete }: { draft: TournamentInput & { id?: number }; clubOptions: string[]; onCancel: () => void; onSave: (draft: TournamentInput & { id?: number }) => void; onDelete: (draft: TournamentInput & { id?: number }) => void }) {
   const [form, setForm] = useState(draft);
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((f) => ({ ...f, [key]: value }));
   return (
@@ -410,7 +415,7 @@ function TournamentForm({ draft, onCancel, onSave, onDelete }: { draft: Tourname
         <Group title={BG.type}><div className={styles.chipRow}>{([8, 9, 10] as BallType[]).map((t) => <Chip key={t} active={form.type === t} onClick={() => set("type", t)}><BallPip type={t} size={18} /> {BG.ballType[t]}</Chip>)}</div></Group>
         <Group title={BG.level}><div className={styles.chipRow}>{(["pro", "amateur", "both"] as TournamentLevel[]).map((l) => <Chip key={l} active={form.level === l} onClick={() => set("level", l)}>{levelLabel(l)}</Chip>)}</div></Group>
         <SelectField label={BG.city} value={form.city} options={CITIES} onChange={(v) => set("city", v)} />
-        <SelectField label={BG.club} value={form.club} options={CLUBS} onChange={(v) => set("club", v)} />
+        <SuggestField label={BG.club} value={form.club} options={clubOptions} onChange={(v) => set("club", v)} />
         <div className={styles.twoCol}><Field label="Дата" value={form.date} onChange={(v) => set("date", v)} /><Field label={BG.startHour} value={form.startHour} onChange={(v) => set("startHour", v)} /></div>
         <Toggle label={BG.handicap} value={form.handicap} onChange={(v) => set("handicap", v)} />
         <Toggle label={BG.dressCode} value={form.dressCode} onChange={(v) => set("dressCode", v)} />
@@ -422,6 +427,19 @@ function TournamentForm({ draft, onCancel, onSave, onDelete }: { draft: Tourname
 
 function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
   return <label className={styles.fieldBlock}><div className={styles.label}>{label}</div><input className={styles.field} type={type} value={value} onChange={(e) => onChange(e.target.value)} /></label>;
+}
+
+function SuggestField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
+  const listId = `${label.replace(/\s+/g, "-").toLowerCase()}-suggestions`;
+  return (
+    <label className={styles.fieldBlock}>
+      <div className={styles.label}>{label}</div>
+      <input className={styles.field} list={listId} value={value} onChange={(e) => onChange(e.target.value)} />
+      <datalist id={listId}>
+        {options.map((option) => <option key={option} value={option} />)}
+      </datalist>
+    </label>
+  );
 }
 
 function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (v: string) => void }) {
